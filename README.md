@@ -17,7 +17,7 @@ An advanced plagiarism detection system powered by deep learning. This applicati
 
 1. **Clone the repository:**
    ```
-   git clone [https://github.com/meymunahao/myfinalyearprojectpractice.git](https://github.com/meymunahao/myfinalyearprojectpractice.git)
+   git clone [https://github.com/meymunahao/myfinalyearprojectpractice.git]
    cd myfinalyearprojectpractice
 2. **Set up a virtual environment (Windows):**
 ```
@@ -31,7 +31,7 @@ pip install -r requirements.txt
 4. **Environment Variables:**
 Create a `.env` file in the root directory and add your MongoDB connection string:
 ```env
-MONGO_URI="your_mongodb_connection_string_here"
+MONGO_URI="your_mongodb_connection_string_here" (currently incomplete)
 ```
 
 ## 💻 Running the Application
@@ -45,5 +45,3 @@ streamlit run app.py
 2.	**Embedding Layer:** Making use of pre-trained BERT tokenizer or GloVe embeddings.
 3.	**Core Layers:** Transformer encoders (BERT) or LSTM for sequence processing; addition to Siamese structure. 
 4.	**Output Layer:** Compute cosine similarity and output score (binary, whether plagiarized or original) with threshold.
-
-Would you like me to help you write a more detailed explanation for the "Model Architecture" section based on the specific neural network you built?
