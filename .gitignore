@@ -1,0 +1,17 @@
+# Virtual Environments
+venv/
+env/
+Lib/
+Include/
+Scripts/
+
+# Deep Learning & Python Caches
+__pycache__/
+*.pyc
+*.h5
+*.pt
+*.pth
+
+# Environment Variables & Secrets
+.env
+.streamlit/secrets.toml
