@@ -5,9 +5,10 @@ import csv
 from io import StringIO
 from pymongo import MongoClient
 
+# --- IMPORTING YOUR CUSTOM BACKEND MODULES ---
 from ingestion import extract_text_from_pdf
 from preprocessing import clean_and_preprocess
-from comparison import calculate_similarity
+from comparison import calculate_similarity, get_matched_sentences
 
 # --- DATABASE CONNECTION ---
 client = MongoClient('mongodb://localhost:27017/')
@@ -17,7 +18,6 @@ results_collection = db['results']
 st.set_page_config(page_title="Deep Learning Plagiarism Checker", page_icon="🕵️‍♀️", layout="wide")
 
 # --- INITIALIZE SESSION STATE MEMORY ---
-# This checks if we've already run a scan. If not, it sets up empty memory slots.
 if 'scan_complete' not in st.session_state:
     st.session_state.scan_complete = False
     st.session_state.report_data = []
@@ -35,11 +35,19 @@ similarity_threshold = st.sidebar.slider(
     step=1
 )
 
+st.sidebar.markdown("---")
+st.sidebar.subheader("📖 Score Guide")
+st.sidebar.info(
+    "**Understanding Semantic Similarity:**\n\n"
+    "🔴 **100%:** Literal, exact copy-and-paste.\n\n"
+    "🟠 **80% - 99%:** Heavy paraphrasing or synonym substitution. Core meaning is identical.\n\n"
+    "🟡 **50% - 79%:** Common domain terminology or general topic overlap. Usually independent work.\n\n"
+    "🟢 **< 50%:** Completely original phrasing and structure."
+)
+
 st.subheader("📂 Document Upload")
-# Tweaked the wording here to guide the user on how to upload the "folder" contents
 uploaded_files = st.file_uploader("Open your assignment folder and select all PDFs (Ctrl+A):", type=['pdf'], accept_multiple_files=True)
 
-# If the user uploads new files, we want to clear the old memory
 if uploaded_files and not st.session_state.scan_complete:
      st.session_state.scan_complete = False
 
@@ -57,14 +65,17 @@ if st.button("🚀 Run Plagiarism Check"):
                 saved_paths.append(file_path)
             
             processed_docs = {}
+            raw_docs = {} # NEW: We need to keep the raw text with punctuation for sentence splitting!
+            
             for path in saved_paths:
                 raw_text = extract_text_from_pdf(path)
                 clean_text = clean_and_preprocess(raw_text)
                 processed_docs[path] = clean_text 
+                raw_docs[path] = raw_text # Store the raw version too
             
             report_data = []
             db_records = []
-            ui_elements = [] # We will save the UI text strings here to display later
+            ui_elements = [] 
             
             pairs = list(itertools.combinations(saved_paths, 2))
             
@@ -78,10 +89,22 @@ if st.button("🚀 Run Plagiarism Check"):
                 
                 if score >= similarity_threshold:
                     status = "FLAGGED"
-                    ui_elements.append(("error", f"🚨 **{status}:** '{name1}' and '{name2}' have a similarity of **{score:.2f}%**"))
+                    # NEW: Run the sentence-by-sentence matrix!
+                    matches = get_matched_sentences(raw_docs[doc1], raw_docs[doc2], similarity_threshold)
+                    
+                    ui_elements.append({
+                        "type": "error",
+                        "message": f"🚨 **{status}:** '{name1}' and '{name2}' have a similarity of **{score:.2f}%**",
+                        "matches": matches,
+                        "doc1_name": name1,
+                        "doc2_name": name2
+                    })
                 else:
                     status = "CLEAR"
-                    ui_elements.append(("success", f"✅ **{status}:** '{name1}' and '{name2}' have a similarity of **{score:.2f}%**"))
+                    ui_elements.append({
+                        "type": "success",
+                        "message": f"✅ **{status}:** '{name1}' and '{name2}' have a similarity of **{score:.2f}%**"
+                    })
                 
                 report_data.append([name1, name2, f"{score:.2f}%", status])
                 db_records.append({
@@ -96,25 +119,43 @@ if st.button("🚀 Run Plagiarism Check"):
                 results_collection.insert_many(db_records)
                 st.sidebar.success("💾 Results permanently saved to MongoDB!")
             
-            # --- SAVE EVERYTHING TO MEMORY ---
             st.session_state.report_data = report_data
             st.session_state.ui_elements = ui_elements
-            st.session_state.scan_complete = True # Flag that memory is full and ready to display
+            st.session_state.scan_complete = True 
 
 # --- DISPLAY FROM MEMORY ---
-# Because this is outside the button, it will stay on screen even after a rerun!
 if st.session_state.scan_complete:
     st.markdown("---")
     st.subheader("📊 Plagiarism Report")
     
-    # Print out all the alerts we saved
-    for alert_type, message in st.session_state.ui_elements:
-        if alert_type == "error":
-            st.error(message)
-        else:
-            st.success(message)
+    import pandas as pd # Import pandas to build our clean UI table
+    
+    # Display the UI elements
+    for element in st.session_state.ui_elements:
+        if element["type"] == "error":
+            st.error(element["message"])
             
-    # Generate CSV from memory
+            # UPGRADED: Create a sophisticated, scrollable table inside the expander
+            if element.get("matches"):
+                with st.expander(f"🔍 View Matched Sentences between {element['doc1_name']} and {element['doc2_name']}"):
+                    
+                    # Package the sentences into a clean grid format
+                    table_data = []
+                    for match in element["matches"]:
+                        table_data.append({
+                            "Match %": f"{match['score']:.2f}%",
+                            f"Text in {element['doc1_name']}": match['doc1_sentence'],
+                            f"Text in {element['doc2_name']}": match['doc2_sentence']
+                        })
+                    
+                    # Display the grid as a Streamlit dataframe
+                    # use_container_width makes it fill the screen nicely
+                    # hide_index removes the ugly row numbers on the side
+                    st.dataframe(pd.DataFrame(table_data), use_container_width=True, hide_index=True)
+                    
+        else:
+            st.success(element["message"])
+            
     csv_buffer = StringIO()
     csv_writer = csv.writer(csv_buffer)
     csv_writer.writerow(["Document 1", "Document 2", "Similarity Score", "Status"])
@@ -128,9 +169,8 @@ if st.session_state.scan_complete:
         mime="text/csv"
     )
     
-    # Add a button to clear the screen
     if st.button("🔄 Clear Results for New Upload"):
         st.session_state.scan_complete = False
         st.session_state.report_data = []
         st.session_state.ui_elements = []
-        st.rerun() # Forces the app to refresh immediately
+        st.rerun()
