@@ -2,15 +2,15 @@ from sentence_transformers import SentenceTransformer, util
 from nltk.tokenize import sent_tokenize
 import nltk
 
-# Ensure the sentence splitter dictionaries are downloaded
+# Downloading the sentence splitter dictionaries
 nltk.download('punkt', quiet=True)
 nltk.download('punkt_tab', quiet=True)
 
-# Load the model globally so it doesn't have to reload for every single function call
+# Loading the model globally so it doesn't have to reload for every single function call
 model = SentenceTransformer('all-mpnet-base-v2')
 
 def calculate_similarity(text1, text2):
-    """Calculates the overall document-level similarity."""
+    """Calculates the document-level cosine similarity."""
     embedding1 = model.encode(text1, convert_to_tensor=True)
     embedding2 = model.encode(text2, convert_to_tensor=True)
     cosine_score = util.cos_sim(embedding1, embedding2)
@@ -18,14 +18,14 @@ def calculate_similarity(text1, text2):
 
 def get_matched_sentences(raw_text1, raw_text2, threshold_percentage=80.0):
     """
-    Splits text into sentences, computes an N x M similarity matrix,
-    and returns the specific sentence pairs that cross the threshold.
+    Tokenizes text into sentences, computes an N x M similarity matrix,
+    and extracts sentence pairs that cross/exceed the threshold.
     """
     # 1. Break the giant text blocks into individual sentences
     sentences1 = sent_tokenize(raw_text1)
     sentences2 = sent_tokenize(raw_text2)
     
-    # Safety check if a document is empty
+    # Checking if a document is empty  or not
     if not sentences1 or not sentences2:
         return []
         
@@ -35,7 +35,7 @@ def get_matched_sentences(raw_text1, raw_text2, threshold_percentage=80.0):
     embeddings2 = model.encode(sentences2, convert_to_tensor=True)
     
     # 3. Compute the N x M similarity matrix
-    # This instantly calculates the angle between every sentence in Doc 1 and Doc 2
+    # It instantly calculates the angle between every sentence in Doc 1 and Doc 2
     cosine_scores = util.cos_sim(embeddings1, embeddings2)
     
     # 4. Filter and extract the matches
@@ -57,26 +57,3 @@ def get_matched_sentences(raw_text1, raw_text2, threshold_percentage=80.0):
     # Sort the matches so the highest similarity scores appear at the top of the list
     matches = sorted(matches, key=lambda x: x['score'], reverse=True)
     return matches
-
-if __name__ == "__main__":
-    # UNIT TEST: Let's test the sentence matrix with a mini-document!
-    
-    doc1_dummy = "Deep learning is a subset of machine learning. Educational institutions often struggle with undetected plagiarism. It requires large amounts of data."
-    
-    doc2_dummy = "Artificial neural networks need massive datasets to train. Schools and universities frequently find it hard to catch copied work in assignments. AI is changing the world."
-    
-    print("Calculating Sentence-by-Sentence Matrix...")
-    
-    # Run the new function
-    matched_pairs = get_matched_sentences(doc1_dummy, doc2_dummy, threshold_percentage=70.0)
-    
-    print("\n✅ Matrix Comparison Complete!")
-    print("-" * 50)
-    print(f"Total flagged sentence pairs found: {len(matched_pairs)}\n")
-    
-    for match in matched_pairs:
-        print(f"🚨 Score: {match['score']:.2f}%")
-        print(f"Doc 1: {match['doc1_sentence']}")
-        print(f"Doc 2: {match['doc2_sentence']}")
-        print("-")
-    print("-" * 50)

@@ -3,10 +3,10 @@ import fitz  # This is PyMuPDF!
 def extract_text_from_pdf(pdf_path):
     extracted_text = ""
     
-    # Open the PDF document
+    # Opening PDF document
     doc = fitz.open(pdf_path)
     
-    # Loop through every page and grab the text
+    # Looping through every page and taking hold of the text
     for page_num in range(len(doc)):
         page = doc.load_page(page_num)
         extracted_text += page.get_text()
@@ -23,7 +23,7 @@ if __name__ == "__main__":
         
         print("\n✅ Extraction successful! Here are the first 300 characters:")
         print("-" * 50)
-        print(text[:300])  # We only print the first 300 characters so we don't flood the terminal
+        print(text[:300]) 
         print("-" * 50)
         
     except Exception as e:
