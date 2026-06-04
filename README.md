@@ -1,11 +1,11 @@
 # Deep Learning Custom-Based Plagiarism Checker
-An advanced plagiarism detection system powered by deep learning. This application analyzes text submissions to identify similarities and potential plagiarism within a student's submissions directory, providing results through an interactive web interface.
+This application analyzes text submissions to identify similarities and potential plagiarism within a student's submissions directory, providing results through an interactive web interface.
 
 ## 🚀 Tech Stack
 * **Deep Learning Framework:** PyTorch & NLTK
 * **Frontend Interface:** Streamlit
 * **Database:** MongoDB
-* **Language:** Python 3.11
+* **Language:** Python 3.12
 
 ## 📋 Features
 * Deep learning text feature extraction and comparison.
@@ -31,7 +31,7 @@ pip install -r requirements.txt
 4. **Environment Variables:**
 Create a `.env` file in the root directory and add your MongoDB connection string:
 ```env
-MONGO_URI="your_mongodb_connection_string_here" (currently incomplete)
+MONGO_URI="your_mongodb_connection_string_here"
 ```
 
 ## 💻 Running the Application
