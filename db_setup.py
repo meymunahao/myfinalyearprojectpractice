@@ -2,7 +2,7 @@ from pymongo import MongoClient
 
 def test_db_connection():
     # Connecting to the local MongoDB
-    client = MongoClient('mongodb://localhost:27017/')
+    client = MongoClient('mongodb://localhost:27017/') #mongodb+srv://admin_db:<db_password>@cluster0.baqddkn.mongodb.net/?appName=Cluster0
     
     # Created the database: 'plagiarism_db'
     db = client['plagiarism_db']
