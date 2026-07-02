@@ -1,3 +1,4 @@
+import streamlit as st  # <-- ADD THIS IMPORT
 from sentence_transformers import SentenceTransformer, util
 from nltk.tokenize import sent_tokenize
 import nltk
@@ -6,8 +7,15 @@ import nltk
 nltk.download('punkt', quiet=True)
 nltk.download('punkt_tab', quiet=True)
 
-# Loading the model globally so it doesn't have to reload for every single function call
-model = SentenceTransformer('all-mpnet-base-v2')
+# --- EDIT THIS SECTION ---
+# Wrap the model loading in Streamlit's resource cache
+@st.cache_resource
+def load_model():
+    return SentenceTransformer('all-mpnet-base-v2')
+
+# Call the cached function to load the model globally
+model = load_model()
+# -------------------------
 
 def calculate_similarity(text1, text2):
     """Calculates the document-level cosine similarity."""
@@ -30,12 +38,10 @@ def get_matched_sentences(raw_text1, raw_text2, threshold_percentage=80.0):
         return []
         
     # 2. Generate embeddings for EVERY sentence at once
-    # This turns our lists of sentences into two giant matrices of numbers
     embeddings1 = model.encode(sentences1, convert_to_tensor=True)
     embeddings2 = model.encode(sentences2, convert_to_tensor=True)
     
     # 3. Compute the N x M similarity matrix
-    # It instantly calculates the angle between every sentence in Doc 1 and Doc 2
     cosine_scores = util.cos_sim(embeddings1, embeddings2)
     
     # 4. Filter and extract the matches

@@ -90,7 +90,6 @@ st.sidebar.info(
     "**Understanding the Plagiarism Score:**\n\n"
     "🔴 **> 20%:** Flagged. High amount of copied or heavily paraphrased sentences.\n\n"
     "🟢 **<= 20%:** Acceptable. Falls within standard academic limits for quotes and common phrases.\n\n"
-    "*(Note: Sentence-level matching requires an 80% semantic similarity to be flagged as a copy)*"
 )
 
 st.subheader("📂 Document Upload")
@@ -227,7 +226,7 @@ if st.session_state.scan_complete:
                 )
                 
                 st.download_button(
-                    label=f"📥 Download Turnitin-Style Report for {element['doc1_name']}",
+                    label=f"📥 Download Report for {element['doc1_name']}",
                     data=pdf_bytes,
                     file_name=f"Report_{element['doc1_name']}.pdf",
                     mime="application/pdf",
